@@ -743,6 +743,19 @@ def main(cmdargs: argparse.Namespace) -> None:
 
     if cmdargs.wantname:
         savename = os.path.join(cmdargs.outdir, cmdargs.wantname)
+    elif len(msgs):
+        lmsg = None
+        for msg in msgs:
+            tlmsg = b4.LoreMessage(msg)
+            if lmsg is None or lmsg.counter > tlmsg.counter:
+                lmsg = tlmsg
+
+        prefix = lmsg.date.strftime('%Y%m%d')
+        authorline = email.utils.getaddresses([str(x) for x in lmsg.msg.get_all('from', [])])[0]
+        local = authorline[1].split('@')[0]
+        unsafe = '%s_%s_v%s_%s' % (local, prefix, lmsg.revision, lmsg.subject)
+        slug = re.sub(r'\W+', '_', unsafe).strip('_').lower()
+        savename = os.path.join(cmdargs.outdir, f'{slug}.{dftext}')
     else:
         safe_msgid = re.sub(r'[^\w@.+%-]+', '_', msgid).strip('_')
         savename = os.path.join(cmdargs.outdir, f'{safe_msgid}.{dftext}')
