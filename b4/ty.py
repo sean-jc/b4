@@ -438,9 +438,13 @@ def send_messages(listing, branch, cmdargs):
             slug = '%s_%s' % (slug_from.lower(), slug_subj.lower())
             slug = re.sub(r'_+', '_', slug)
             outfile = os.path.join(cmdargs.outdir, '%s.thanks' % slug)
-            logger.info('  Writing: %s', outfile)
-            with open(outfile, 'wb') as fh:
-                fh.write(msg.as_bytes(policy=b4.emlpolicy))
+
+            if os.path.exists(outfile):
+                logger.critical('ERROR: %s already exists, skipping', outfile)
+            else:
+                logger.info('  Writing: %s', outfile)
+                with open(outfile, 'wb') as fh:
+                    fh.write(msg.as_bytes(policy=b4.emlpolicy))
         if cmdargs.dryrun:
             logger.info('Dry run, preserving tracked series.')
         else:
@@ -585,18 +589,7 @@ def discard_selected(cmdargs):
 
     sys.exit(0)
 
-
-def check_stale_thanks(outdir):
-    if os.path.exists(outdir):
-        for entry in Path(outdir).iterdir():
-            if entry.suffix == '.thanks':
-                logger.critical('ERROR: Found existing .thanks files in: %s', outdir)
-                logger.critical('       Please send them first (or delete if already sent).')
-                logger.critical('       Refusing to run to avoid potential confusion.')
-                sys.exit(1)
-
-
-def get_wanted_branch(cmdargs):
+def get_wanted_branch(cmdargs: argparse.Namespace) -> str:
     global BRANCH_INFO
     gitdir = cmdargs.gitdir
     if not cmdargs.branch:
@@ -668,10 +661,8 @@ def main(cmdargs):
         sys.exit(1)
 
     if cmdargs.auto:
-        check_stale_thanks(cmdargs.outdir)
         auto_thankanator(cmdargs)
     elif cmdargs.thankfor:
-        check_stale_thanks(cmdargs.outdir)
         thank_selected(cmdargs)
     elif cmdargs.discard:
         discard_selected(cmdargs)
